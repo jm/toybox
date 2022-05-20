@@ -2,19 +2,26 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"github.com/fatih/color"
 	"encoding/json"
-	"path/filepath"
-	"net/http"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
+	"net/http"
 	"regexp"
+	"sort"
+	"strings"
+	
 	"golang.org/x/exp/slices"
+	"golang.org/x/exp/maps"
 	"golang.org/x/term"
+	
+	"github.com/fatih/color"
 	version "github.com/hashicorp/go-version"
 )
 
+// Borrowed this approach from Stack Overflow, but I can't
+// find the post now...
 type BasicAuthRoundTripper struct {
 	Username string
 	Password string
@@ -33,6 +40,7 @@ type Toybox struct {
 	CurrentlySelectedVersion string
 	Dependencies []*DependencyRelationship
 	Dependents []*DependencyRelationship
+	DefaultRef string
 }
 
 func (tb *Toybox) FetchPossibleVersions() {
@@ -65,7 +73,36 @@ func (tb *Toybox) FetchPossibleVersions() {
     		tb.PossibleVersions = append(tb.PossibleVersions, result[i]["name"].(string))
     	}
 
-    	tb.PossibleVersions = append(tb.PossibleVersions, "main")
+    	tb.PossibleVersions = append(tb.PossibleVersions, tb.DefaultRef)
+	}
+}
+
+func (tb *Toybox) FetchDefaultRef() {
+	c := http.Client{
+		Transport: &BasicAuthRoundTripper{Username: "", Password: "", RoundTripper: http.DefaultTransport},
+	}
+	resp, err := c.Get(fmt.Sprintf("https://api.github.com/repos/%s", tb.Name))
+
+	if (err != nil) || (resp.StatusCode != 200) {
+        fmt.Println("Error fetching default", resp.StatusCode, tb.Name)
+        os.Exit(1)
+	} else {
+		defer resp.Body.Close()
+    	body, err := ioutil.ReadAll(resp.Body) // response body is []byte
+
+    	if err != nil {
+        	fmt.Println(err)
+        	os.Exit(1)
+		}
+
+    	var result map[string]interface{}
+    	if err = json.Unmarshal(body, &result); err != nil {
+    		fmt.Println(string(body))
+        	fmt.Println(err)
+        	os.Exit(1)
+    	}
+
+    	tb.DefaultRef = result["default_branch"].(string)
 	}
 }
 
@@ -168,7 +205,7 @@ func (tb *Toybox) ResolveBestVersion() string {
 	return bestVersion
 }
 
-func (tb *Toybox) Fetch() {
+func (tb *Toybox) Fetch() string {
 	resp, err := http.Get(fmt.Sprintf("https://github.com/%s/zipball/%s", tb.Name, tb.CurrentlySelectedVersion))
 
 	if err != nil {
@@ -177,7 +214,7 @@ func (tb *Toybox) Fetch() {
 	}
 	defer resp.Body.Close()
 
-	out, err := os.Create(fmt.Sprintf("%s.zip", tb.CurrentlySelectedVersion))
+	out, err := ioutil.TempFile("toyboxes", "tb")
 	if err != nil {
 		fmt.Println(err)
         os.Exit(1)
@@ -185,6 +222,13 @@ func (tb *Toybox) Fetch() {
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
+	fullPath, err := filepath.Abs(filepath.Dir(out.Name()))
+
+    if err != nil {
+        panic(err)
+    }
+
+    return fullPath
 }
 
 func (tb *Toybox) FetchBoxfile() string {
@@ -241,21 +285,34 @@ func (bf *Boxfile) parseAndLoadRequirements(root *Toybox, jsonString string) {
 
 func (bf *Boxfile) Resolve(root *Toybox, requirementsMap map[string]string) {
 	for dependency, requiredVersion := range requirementsMap {
-
 		var candidate *Toybox
 
 		if bf.Toyboxes[dependency] != nil {
 			root.AddDependency(bf.Toyboxes[dependency], requiredVersion)
 		} else {
-			newCandidate := Toybox{dependency, []string{}, "", []*DependencyRelationship{}, []*DependencyRelationship{}}
+			newCandidate := Toybox{dependency, []string{}, "", []*DependencyRelationship{}, []*DependencyRelationship{}, "default"}
+			newCandidate.FetchDefaultRef()
 			newCandidate.FetchPossibleVersions()
 
 			bf.Toyboxes[dependency] = &newCandidate
 			candidate = &newCandidate
 
+			if (requiredVersion == "default") || (requiredVersion == "*") {
+				requiredVersion = candidate.DefaultRef
+			}
+
 			root.AddDependency(candidate, requiredVersion)
 		}
     }
+}
+
+func (bf *Boxfile) Sort() []*Toybox {
+	sortedBoxes := maps.Values(bf.Toyboxes)
+	sort.Slice(sortedBoxes, func(i, j int) bool {
+  		return len(sortedBoxes[i].Dependents) < len(sortedBoxes[j].Dependents)
+	})
+
+	return sortedBoxes
 }
 
 type Installer struct {
@@ -265,13 +322,15 @@ type Installer struct {
 func (i *Installer) Install() {
 	i.assertBoxfile()
 
-    root := Toybox{"root", []string{"master"}, "master", []*DependencyRelationship{}, []*DependencyRelationship{}}
+    root := Toybox{"root", []string{"default"}, "default", []*DependencyRelationship{}, []*DependencyRelationship{}, "default"}
 	boxfile = &Boxfile{make(map[string]*Toybox), &root }
 
 	boxfile.Load("./Boxfile")
 	fmt.Println("======= install")
-	for tbi := range boxfile.Toyboxes {	
-		fmt.Println(boxfile.Toyboxes[tbi].Name,boxfile.Toyboxes[tbi].CurrentlySelectedVersion)
+	installList := boxfile.Sort()
+	for tbi := range installList {	
+		fmt.Println(installList[tbi].Name,installList[tbi].CurrentlySelectedVersion)
+		installList[tbi].Fetch()
 	}
 }
 
@@ -297,14 +356,14 @@ func main() {
 
 	color.Cyan("TOYBOX")
 
-	passwd, _ := term.ReadPassword(0)
-	fmt.Println(passwd)
-
 	switch os.Args[1] {
 	case "install":
 		fmt.Println("installing")
 		installer := Installer{}
 		installer.Install()
+	case "login":
+		passwd, _ := term.ReadPassword(0)
+		fmt.Println(passwd)
 	case "add":
 		// barCmd.Parse(os.Args[2:])
 		fmt.Println("subcommand 'bar'")
@@ -314,6 +373,8 @@ func main() {
 		fmt.Println("subcommand 'bar'")
 	case "info":
 		fmt.Println("subcommand 'bar'")
+	case "help":
+		fmt.Println("halp plz")
 	default:
 		fmt.Println("expected subcommand")
 		os.Exit(1)

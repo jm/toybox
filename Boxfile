@@ -1,4 +1,5 @@
 {
 	"jm/tb1": "> 0.0.0",
-	"jm/tb4": "> 0.0.0"
+	"jm/tb4": "> 0.0.0",
+	"themousery/vector.lua": "*"
 }
