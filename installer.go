@@ -23,7 +23,6 @@ func (i *Installer) Install() {
         ReportInfo("Use `toybox login` to avoid GitHub API limits.")
     }
 
-
     ReportProgress("Loading Boxfile...")
 
     root := Toybox{"root", []string{"default"}, "default", []*DependencyRelationship{}, []*DependencyRelationship{}, "default"}
@@ -149,4 +148,16 @@ func InstallDependencies() {
     installer.Install()
     
     ReportDone()
+}
+
+func UpdateDependency(dependency string) {
+    path := filepath.Join("source", "libraries", dependency)
+    if _, err := os.Stat(path); !os.IsNotExist(err) {
+        ReportInfo(fmt.Sprintf("Removing current version of %s...", dependency))
+        os.RemoveAll(path)
+    } else {
+        ReportInfo("Dependency not installed, installing dependencies")
+    }
+
+    InstallDependencies()
 }

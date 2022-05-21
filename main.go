@@ -29,8 +29,7 @@ func main() {
 
 		InstallDependencies()
 	case "update":
-		// Remove existing dep
-		InstallDependencies()
+		UpdateDependency(os.Args[2])
 	case "generate":
 		// Generate new tb equipped project
 	case "info":
