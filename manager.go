@@ -11,13 +11,14 @@ import(
     "golang.org/x/exp/slices"
 )
 
-type Installer struct {
+type Manager struct {
 
 }
 
-func (i *Installer) Install() {
-	i.assertBoxfile()
+func (m *Manager) Install() {
+	m.assertBoxfile()
 
+    Credential = LoadGitHubCredential()
     if Credential == nil {
         ReportInfo("It is highly recommended you log in to GitHub!")
         ReportInfo("Use `toybox login` to avoid GitHub API limits.")
@@ -39,31 +40,64 @@ func (i *Installer) Install() {
 		
         _, err := os.Stat(fmt.Sprintf("source/libraries/%s", toybox.Name))
 
-        if err != nil {
-            Print(fmt.Sprintf("Fetching %s...", toybox.Name))
-            zipFilePath := toybox.Fetch()
-            Print("Extracting...")
-            i.Extract(zipFilePath, toybox.Name)
+        if err == nil {
+            versionFilePath := filepath.Join(m.DependencyPath(toybox.Name), ".toybox_version")
+            readVersion, err := os.ReadFile(versionFilePath)
+
+            if err != nil {
+                ReportError(fmt.Sprintf("Error reading version file for %s", toybox.Name), err, true)
+            }
+
+            if (string(readVersion) != toybox.CurrentlySelectedVersion) {
+                Print(fmt.Sprintf("Updating %s to %s...", toybox.Name, toybox.CurrentlySelectedVersion))
+
+                m.RemoveDependencyFiles(toybox.Name)
+                m.FetchAndExtract(toybox)
+            } else {
+                Print(fmt.Sprintf("Using %s@%s", toybox.Name, toybox.CurrentlySelectedVersion))
+            }
         } else {
-            Print(fmt.Sprintf("Using %s@%s", toybox.Name, toybox.CurrentlySelectedVersion))
+            m.FetchAndExtract(toybox)
         }
 
-		mainFile := i.GenerateImportLine(toybox.Name)
+		mainFile := m.GenerateImportLine(toybox.Name)
 		importList = append(importList, mainFile)
 	}
 
     ReportProgress("Writing import file")
-	i.WriteImportFile(importList)
+	m.WriteImportFile(importList)
+
+    ReportDone()
 }
 
-func (i *Installer) WriteImportFile(importList []string) {
+func (m *Manager) FetchAndExtract(toybox *Toybox) {
+    Print(fmt.Sprintf("Fetching %s...", toybox.Name))
+    zipFilePath := toybox.Fetch()
+
+    Print("Extracting...")
+    m.Extract(zipFilePath, toybox.Name)
+
+    Print("Writing version file...")
+    m.WriteVersionFile(toybox)
+}
+
+func (m *Manager) WriteVersionFile(toybox *Toybox) {
+    versionFilePath := filepath.Join(m.DependencyPath(toybox.Name), ".toybox_version")
+
+    err := os.WriteFile(versionFilePath, []byte(toybox.CurrentlySelectedVersion), 0644)
+    if err != nil {
+        ReportError("Error writing version file", err, true)
+    }
+}
+
+func (m *Manager) WriteImportFile(importList []string) {
     err := os.WriteFile("source/toyboxes.lua", []byte(strings.Join(importList, "\n")), 0644)
     if err != nil {
     	ReportError("Error writing import file", err, true)
     }
 }
 
-func (i *Installer) GenerateImportLine(toyboxName string) string {
+func (m *Manager) GenerateImportLine(toyboxName string) string {
 	result := ""
 
 	possibilities := []string{
@@ -85,8 +119,8 @@ func (i *Installer) GenerateImportLine(toyboxName string) string {
 	return result
 }
 
-func (i *Installer) Extract(zipFilePath string, toyboxName string) {
-	destination := fmt.Sprintf("source/libraries/%s", toyboxName)
+func (m *Manager) Extract(zipFilePath string, toyboxName string) {
+	destination := m.DependencyPath(toyboxName)
 
     archive, err := zip.OpenReader(zipFilePath)
     if err != nil {
@@ -129,7 +163,7 @@ func (i *Installer) Extract(zipFilePath string, toyboxName string) {
     }
 }
 
-func (i *Installer) assertBoxfile() {
+func (m *Manager) assertBoxfile() {
 	matches, err := filepath.Glob("./Boxfile")
 
     if err != nil {
@@ -141,23 +175,25 @@ func (i *Installer) assertBoxfile() {
     }
 }
 
-func InstallDependencies() {
-    Credential = LoadGitHubCredential()
-    
-    installer := Installer{}
-    installer.Install()
-    
-    ReportDone()
+func (m *Manager) RemoveDependencyFiles(dependency string) {
+    path := m.DependencyPath(dependency)
+
+    if _, err := os.Stat(path); !os.IsNotExist(err) {
+        os.RemoveAll(path)
+    }
+}
+
+func (m *Manager) DependencyPath(dependency string) string {
+    return filepath.Join("source", "libraries", dependency)
 }
 
 func UpdateDependency(dependency string) {
-    path := filepath.Join("source", "libraries", dependency)
-    if _, err := os.Stat(path); !os.IsNotExist(err) {
+    if _, err := os.Stat(DependencyManager.DependencyPath(dependency)); !os.IsNotExist(err) {
         ReportInfo(fmt.Sprintf("Removing current version of %s...", dependency))
-        os.RemoveAll(path)
+        DependencyManager.RemoveDependencyFiles(dependency)
     } else {
         ReportInfo("Dependency not installed, installing dependencies")
     }
 
-    InstallDependencies()
+    DependencyManager.Install()
 }

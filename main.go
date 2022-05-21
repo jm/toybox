@@ -6,6 +6,7 @@ import (
 )
 
 var Credential *GitHubCredential
+var DependencyManager = Manager{}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -15,19 +16,19 @@ func main() {
 	StartupBanner()
 	switch os.Args[1] {
 	case "install":
-		InstallDependencies()
+		DependencyManager.Install()
 	case "login":
 		LoginOrRenewGitHubCredential()
 	case "add":
 		bfe := BoxfileEditor{}
 		bfe.Add(os.Args[2])
 
-		InstallDependencies()
+		DependencyManager.Install()
 	case "remove":
 		bfe := BoxfileEditor{}
 		bfe.Remove(os.Args[2])
 
-		InstallDependencies()
+		DependencyManager.Install()
 	case "update":
 		UpdateDependency(os.Args[2])
 	case "generate":
