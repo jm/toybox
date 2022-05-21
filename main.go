@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -37,12 +36,10 @@ func main() {
 		bfd := BoxfileDescriber{}
 		bfd.Describe()
 	case "help":
-		h := Helper{(os.Args[2:])}
-		h.DispenseKnowledge()
+		ShowHelp(os.Args[len(os.Args)-1])
 	case "version":
 		PrintVersion()
 	default:
-		fmt.Println("expected subcommand")
-		os.Exit(1)
+		ShowHelp(os.Args[len(os.Args)-1])
 	}
 }
