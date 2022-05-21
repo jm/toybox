@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	
-	"golang.org/x/term"
 )
 
 func main() {
@@ -18,8 +16,21 @@ func main() {
 		installer := Installer{}
 		installer.Install()
 	case "login":
-		passwd, _ := term.ReadPassword(0)
-		fmt.Println(passwd)
+		ReportError("Error writing import file", nil, true)
+		if credential := LoadGitHubCredential(); credential != nil {
+			fmt.Println("Logged in to GitHub as", credential.User)
+			fmt.Printf("Update stored credentials? (y/n) ")
+			
+			answer := "n"
+			fmt.Scanln(&answer)
+
+			if answer == "y" {
+				fmt.Println()
+				RequestGitHubCredential()	
+			}
+		} else {
+			RequestGitHubCredential()
+		}
 	case "add":
 		// barCmd.Parse(os.Args[2:])
 		fmt.Println("subcommand 'bar'")

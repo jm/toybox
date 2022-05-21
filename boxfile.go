@@ -19,9 +19,7 @@ func (bf *Boxfile) Load(path string) {
 	jsonString, err := os.ReadFile(path)
     
     if err != nil {
-		fmt.Println("Error loading Boxfile:")
-        fmt.Println(err)
-        os.Exit(1)
+		ReportError("Error loading Boxfile", err, true)
     }
 
    	bf.parseAndLoadRequirements(bf.Root, string(jsonString))
@@ -32,9 +30,7 @@ func (bf *Boxfile) parseAndLoadRequirements(root *Toybox, jsonString string) {
     err := json.Unmarshal([]byte(jsonString), &parsedData)
 
     if err != nil {
-		fmt.Println("Error parsing and loading :", jsonString)
-        fmt.Println(err)
-        os.Exit(1)
+		ReportError("Error parsing Boxfile", err, true)
     }
 
     bf.Resolve(root, parsedData)

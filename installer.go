@@ -18,6 +18,10 @@ type Installer struct {
 func (i *Installer) Install() {
 	i.assertBoxfile()
 
+    if credential := LoadGitHubCredential(); credential == nil {
+        fmt.Println("It is highly recommended you log in to GitHub!")
+    }
+
     root := Toybox{"root", []string{"default"}, "default", []*DependencyRelationship{}, []*DependencyRelationship{}, "default"}
 	boxfile = &Boxfile{make(map[string]*Toybox), &root }
 
@@ -42,8 +46,7 @@ func (i *Installer) Install() {
 func (i *Installer) WriteImportFile(importList []string) {
     err := os.WriteFile("source/toyboxes.lua", []byte(strings.Join(importList, "\n")), 0644)
     if err != nil {
-    	fmt.Println("Error writing import file:", err)
-        os.Exit(1)
+    	ReportError("Error writing import file", err, true)
     }
 }
 
@@ -75,8 +78,7 @@ func (i *Installer) Extract(zipFilePath string, toyboxName string) {
 
     archive, err := zip.OpenReader(zipFilePath)
     if err != nil {
-    	fmt.Println("Error unzipping (", zipFilePath, "):", err)
-        os.Exit(1)
+        ReportError(fmt.Sprintf("Error unzipping (%s)", zipFilePath), err, true)
     }
     defer archive.Close()
 
@@ -89,27 +91,26 @@ func (i *Installer) Extract(zipFilePath string, toyboxName string) {
         fmt.Println("unzipping file ", filePath)
 
         if f.FileInfo().IsDir() {
-            fmt.Println("creating directory...")
             os.MkdirAll(filePath, os.ModePerm)
             continue
         }
 
         if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-            panic(err)
+            ReportError(fmt.Sprintf("Error creating path (%s)", filePath), err, true)
         }
 
         dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
         if err != nil {
-            panic(err)
+            ReportError(fmt.Sprintf("Error extracting file (%s)", filePath), err, true)
         }
 
         fileInArchive, err := f.Open()
         if err != nil {
-            panic(err)
+            ReportError(fmt.Sprintf("Error extracting file (%s)", fileInArchive), err, true)
         }
 
         if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-            panic(err)
+            ReportError(fmt.Sprintf("Error copying contents to file (%s)", dstFile), err, true)
         }
 
         dstFile.Close()
@@ -121,12 +122,10 @@ func (i *Installer) assertBoxfile() {
 	matches, err := filepath.Glob("./Boxfile")
 
     if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
+        ReportError("Error locating Boxfile", err, true)
     }
 
     if len(matches) == 0 {
-        fmt.Println("Boxfile not found")
-        os.Exit(1)
+        ReportError("Boxfile not found", nil, true)
     }
 }
