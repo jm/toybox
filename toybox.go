@@ -10,7 +10,9 @@ import(
 	"regexp"
 
     "golang.org/x/exp/slices"
+
    	version "github.com/hashicorp/go-version"
+   	"github.com/schollz/progressbar"
 )
 
 type Toybox struct {
@@ -23,9 +25,7 @@ type Toybox struct {
 }
 
 func (tb *Toybox) FetchPossibleVersions() {
-	c := http.Client{
-		Transport: &BasicAuthRoundTripper{Username: "jm", Password: "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", RoundTripper: http.DefaultTransport},
-	}
+	c := HttpClient()
 	resp, err := c.Get(fmt.Sprintf("https://api.github.com/repos/%s/tags", tb.Name))
 
 	if (err != nil) || (resp.StatusCode != 200) {
@@ -53,9 +53,7 @@ func (tb *Toybox) FetchPossibleVersions() {
 }
 
 func (tb *Toybox) FetchDefaultRef() {
-	c := http.Client{
-		Transport: &BasicAuthRoundTripper{Username: "jm", Password: "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", RoundTripper: http.DefaultTransport},
-	}
+	c := HttpClient()
 	resp, err := c.Get(fmt.Sprintf("https://api.github.com/repos/%s", tb.Name))
 
 	if (err != nil) || (resp.StatusCode != 200) {
@@ -181,7 +179,12 @@ func (tb *Toybox) Fetch() string {
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
+	bar := progressbar.DefaultBytes(
+    	resp.ContentLength,
+    	"       ",
+	)
+
+	_, err = io.Copy(io.MultiWriter(out, bar), resp.Body)
 	if err != nil {
 		ReportError("Error writing to tempfile", err, true)
 	}

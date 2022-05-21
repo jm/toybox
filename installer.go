@@ -18,28 +18,42 @@ type Installer struct {
 func (i *Installer) Install() {
 	i.assertBoxfile()
 
-    if credential := LoadGitHubCredential(); credential == nil {
-        fmt.Println("It is highly recommended you log in to GitHub!")
+    if Credential == nil {
+        ReportInfo("It is highly recommended you log in to GitHub!")
+        ReportInfo("Use `toybox login` to avoid GitHub API limits.")
     }
+
+
+    ReportProgress("Loading Boxfile...")
 
     root := Toybox{"root", []string{"default"}, "default", []*DependencyRelationship{}, []*DependencyRelationship{}, "default"}
 	boxfile = &Boxfile{make(map[string]*Toybox), &root }
 
 	boxfile.Load("./Boxfile")
-	fmt.Println("======= install")
 	
+	ReportProgress("Installing")
+
 	importList := []string{}
 	installList := boxfile.Sort()
 	for tbi := range installList {
 		toybox := installList[tbi]
 		
-		zipFilePath := toybox.Fetch()
-		i.Extract(zipFilePath, toybox.Name)
+        _, err := os.Stat(fmt.Sprintf("source/libraries/%s", toybox.Name))
+
+        if err != nil {
+            Print(fmt.Sprintf("Fetching %s...", toybox.Name))
+            zipFilePath := toybox.Fetch()
+            Print("Extracting...")
+            i.Extract(zipFilePath, toybox.Name)
+        } else {
+            Print(fmt.Sprintf("Using %s@%s", toybox.Name, toybox.CurrentlySelectedVersion))
+        }
 
 		mainFile := i.GenerateImportLine(toybox.Name)
 		importList = append(importList, mainFile)
 	}
 
+    ReportProgress("Writing import file")
 	i.WriteImportFile(importList)
 }
 
@@ -61,7 +75,6 @@ func (i *Installer) GenerateImportLine(toyboxName string) string {
 	}
 
 	for possibility := range possibilities {
-		fmt.Println("**** locating", possibilities[possibility])
 		if _, err := os.Stat(possibilities[possibility]); err == nil {
   			result = fmt.Sprintf("import(\"%s\")", strings.TrimPrefix(strings.TrimSuffix(possibilities[possibility], ".lua"), "source/"))
   			break
@@ -88,7 +101,6 @@ func (i *Installer) Extract(zipFilePath string, toyboxName string) {
     	relativeFilePath := strings.Join(relativeFilePathParts, "/")
 
         filePath := filepath.Join(destination, relativeFilePath)
-        fmt.Println("unzipping file ", filePath)
 
         if f.FileInfo().IsDir() {
             os.MkdirAll(filePath, os.ModePerm)
@@ -128,4 +140,13 @@ func (i *Installer) assertBoxfile() {
     if len(matches) == 0 {
         ReportError("Boxfile not found", nil, true)
     }
+}
+
+func InstallDependencies() {
+    Credential = LoadGitHubCredential()
+    
+    installer := Installer{}
+    installer.Install()
+    
+    ReportDone()
 }

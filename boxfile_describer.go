@@ -4,6 +4,6 @@ type BoxfileDescriber struct {
 	File Boxfile
 }
 
-func (e *BoxfileEditor) Describe() {
+func (e *BoxfileDescriber) Describe() {
 	
 }

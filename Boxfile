@@ -1,5 +1,6 @@
 {
-	"jm/tb1": "> 0.0.0",
-	"jm/tb4": "> 0.0.0",
-	"themousery/vector.lua": "*"
+ "Whitebrim/AnimatedSprite": "default",
+ "jm/tb1": "\u003e 0.0.0",
+ "jm/tb4": "\u003e 0.0.0",
+ "themousery/vector.lua": "*"
 }

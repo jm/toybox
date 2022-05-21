@@ -5,39 +5,37 @@ import (
 	"os"
 )
 
+var Credential *GitHubCredential
+
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("expected subcommand")
-		os.Exit(1)
+		ReportError("Expected a subcommand!  Maybe start with `toybox help`?", nil, true)
 	}
 
+	StartupBanner()
 	switch os.Args[1] {
 	case "install":
-		installer := Installer{}
-		installer.Install()
+		InstallDependencies()
 	case "login":
-		ReportError("Error writing import file", nil, true)
-		if credential := LoadGitHubCredential(); credential != nil {
-			fmt.Println("Logged in to GitHub as", credential.User)
-			fmt.Printf("Update stored credentials? (y/n) ")
-			
-			answer := "n"
-			fmt.Scanln(&answer)
-
-			if answer == "y" {
-				fmt.Println()
-				RequestGitHubCredential()	
-			}
-		} else {
-			RequestGitHubCredential()
-		}
+		LoginOrRenewGitHubCredential()
 	case "add":
-		// barCmd.Parse(os.Args[2:])
-		fmt.Println("subcommand 'bar'")
+		bfe := BoxfileEditor{}
+		bfe.Add(os.Args[2])
+
+		InstallDependencies()
 	case "remove":
-		fmt.Println("subcommand 'bar'")
+		bfe := BoxfileEditor{}
+		bfe.Remove(os.Args[2])
+
+		InstallDependencies()
+	case "update":
+		// Remove existing dep
+		InstallDependencies()
+	case "generate":
+		// Generate new tb equipped project
 	case "info":
-		fmt.Println("subcommand 'bar'")
+		bfd := BoxfileDescriber{}
+		bfd.Describe()
 	case "help":
 		h := Helper{(os.Args[2:])}
 		h.DispenseKnowledge()

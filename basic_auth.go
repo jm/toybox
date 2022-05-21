@@ -15,3 +15,13 @@ func (rt *BasicAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, e
 	req.SetBasicAuth(rt.Username, rt.Password)
 	return rt.RoundTripper.RoundTrip(req)
 }
+
+func HttpClient() http.Client {
+	if Credential != nil {
+		return http.Client{
+			Transport: &BasicAuthRoundTripper{Username: Credential.User, Password: Credential.Token, RoundTripper: http.DefaultTransport},
+		}
+	} else {
+		return http.Client{}
+	}
+}

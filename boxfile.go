@@ -1,7 +1,6 @@
 package main
 
 import(
-	"fmt"
 	"encoding/json"
 	"golang.org/x/exp/maps"
 	"os"
@@ -19,9 +18,10 @@ func (bf *Boxfile) Load(path string) {
 	jsonString, err := os.ReadFile(path)
     
     if err != nil {
-		ReportError("Error loading Boxfile", err, true)
+		ReportError("Error reading Boxfile", err, true)
     }
 
+    Print("Resolving dependencies...")
    	bf.parseAndLoadRequirements(bf.Root, string(jsonString))
 }
 
