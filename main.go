@@ -13,6 +13,8 @@ func main() {
 	}
 
 	StartupBanner()
+    Credential = LoadGitHubCredential()
+
 	switch os.Args[1] {
 	case "install":
 		DependencyManager.Install()
@@ -33,8 +35,7 @@ func main() {
 	case "generate":
 		// Generate new tb equipped project
 	case "info":
-		bfd := BoxfileDescriber{}
-		bfd.Describe()
+		DescribeBoxfile()
 	case "help":
 		ShowHelp(os.Args[len(os.Args)-1])
 	case "version":

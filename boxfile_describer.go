@@ -1,9 +1,20 @@
 package main
 
-type BoxfileDescriber struct {
-	File Boxfile
-}
+import (
+	"fmt"
+)
 
-func (e *BoxfileDescriber) Describe() {
-	boxfile.Load("./Boxfile")	
+func DescribeBoxfile() {
+    root := Toybox{"root", []string{"default"}, "default", []*DependencyRelationship{}, []*DependencyRelationship{}, "default"}
+	boxfile = &Boxfile{make(map[string]*Toybox), &root }
+
+	boxfile.Load("./Boxfile")
+	
+	ReportInfo(fmt.Sprintf("Resolved with %d dependencies.\n", len(boxfile.Toyboxes)))
+
+	for toybox := range boxfile.Toyboxes {
+		Print(fmt.Sprintf("- %s@%s", toybox, boxfile.Toyboxes[toybox].CurrentlySelectedVersion))
+	}
+
+	fmt.Println()
 }

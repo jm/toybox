@@ -1,6 +1,6 @@
 package main
 
-import "net/http"
+import ("net/http")
 
 // Borrowed this approach from Stack Overflow, but I can't
 // find the post now...

@@ -18,7 +18,6 @@ type Manager struct {
 func (m *Manager) Install() {
 	m.assertBoxfile()
 
-    Credential = LoadGitHubCredential()
     if Credential == nil {
         ReportInfo("It is highly recommended you log in to GitHub!")
         ReportInfo("Use `toybox login` to avoid GitHub API limits.")

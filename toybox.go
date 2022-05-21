@@ -57,7 +57,7 @@ func (tb *Toybox) FetchDefaultRef() {
 	resp, err := c.Get(fmt.Sprintf("https://api.github.com/repos/%s", tb.Name))
 
 	if (err != nil) || (resp.StatusCode != 200) {
-		ReportError("Error fetching default ref", err, true)
+		ReportError(fmt.Sprintf("Error fetching default ref (status %d)", resp.StatusCode), err, true)
 	} else {
 		defer resp.Body.Close()
     	body, err := ioutil.ReadAll(resp.Body) // response body is []byte
