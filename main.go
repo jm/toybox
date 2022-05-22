@@ -33,7 +33,7 @@ func main() {
 	case "update":
 		UpdateDependency(os.Args[2])
 	case "generate":
-		// Generate new tb equipped project
+		GenerateProject(os.Args[2])
 	case "info":
 		DescribeBoxfile()
 	case "help":
