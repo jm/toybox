@@ -6,7 +6,7 @@ A dependency management system for Lua on the [Playdate](https://play.date).
 
 ### Why not just use Lua Rocks or Git submodules?
 
-Lua Rocks unfortunately isn't compatible with the Playdate implementation
+Lua Rocks, unfortunately, isn't compatible with the Playdate implementation
 of Lua.  Playdate uses `import` to pull in files and libraries at _compile 
 time_, whereas Lua Rocks (and mainline Lua) uses `require` that pulls in
 things at runtime.  The distinction matters and probably has a lot to do
