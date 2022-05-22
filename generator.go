@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"os"
 	"os/user"
+	"runtime"
 )
 
 func GenerateProject(destination string) {
@@ -45,19 +46,32 @@ func GenerateProject(destination string) {
     }
 
 	Print("Adding Boxfile")
-	boxfileExample := "{\n  \"dependency\":\"1.0\"\n}"
+	boxfileExample := "{\n  \"owner/dependency\":\"1.0\"\n}"
 	
 	err = os.WriteFile(filepath.Join(destination, "Boxfile"), []byte(boxfileExample), 0644)
     if err != nil {
         ReportError("Error writing example Boxfile", err, true)
     }
 
-	Print("Adding Makefile")
-	makefileExample := ".PHONY: clean\n.PHONY: build\n.PHONY: run\n.PHONY: copy\n\nSDK = $(shell egrep '^\\s*SDKRoot' ~/.Playdate/config | head -n 1 | cut -c9-)\nSDKBIN=$(SDK)/bin\nGAME=$(notdir $(CURDIR))\nSIM=Playdate Simulator\n\nbuild: clean compile run\n\nrun: open\n\nclean:\n\trm -rf 'build/$(GAME).pdx'\n\ncompile:\n\tmkdir build ; \"$(SDKBIN)/pdc\" 'source' './build/$(GAME).pdx'\n\nopen: compile\n\topen -a '$(SDKBIN)/$(SIM).app/Contents/MacOS/$(SIM)' './build/$(GAME).pdx'"
+    makefileExample := ""
+    operatingSystem := runtime.GOOS
+    switch operatingSystem {
+    case "darwin":
+        makefileExample = ".PHONY: clean\n.PHONY: build\n.PHONY: run\n.PHONY: copy\n\nSDK = $(shell egrep '^\\s*SDKRoot' ~/.Playdate/config | head -n 1 | cut -c9-)\nSDKBIN=$(SDK)/bin\nGAME=$(notdir $(CURDIR))\nSIM=Playdate Simulator\n\nbuild: clean compile run\n\nrun: open\n\nclean:\n\trm -rf 'build/$(GAME).pdx'\n\ncompile:\n\tmkdir build ; \"$(SDKBIN)/pdc\" 'source' './build/$(GAME).pdx'\n\nopen: compile\n\topen -a '$(SDKBIN)/$(SIM).app/Contents/MacOS/$(SIM)' './build/$(GAME).pdx'"
+    case "linux":
+    	// TODO: Make sure this works...
+        makefileExample = ".PHONY: clean\n.PHONY: build\n.PHONY: run\n.PHONY: copy\n\nSDK = $(shell egrep '^\\s*SDKRoot' ~/.Playdate/config | head -n 1 | cut -c9-)\nSDKBIN=$(SDK)/bin\nGAME=$(notdir $(CURDIR))\nSIM=Playdate Simulator\n\nbuild: clean compile run\n\nrun: open\n\nclean:\n\trm -rf 'build/$(GAME).pdx'\n\ncompile:\n\tmkdir build ; \"$(SDKBIN)/pdc\" 'source' './build/$(GAME).pdx'\n\nopen: compile\n\topen -a '$(SDKBIN)/$(SIM)' './build/$(GAME).pdx'"
+    }
+
+    if makefileExample != "" {
+		Print("Adding Makefile")
 	
-	err = os.WriteFile(filepath.Join(destination, "Makefile"), []byte(makefileExample), 0644)
-    if err != nil {
-        ReportError("Error writing example Makefile", err, true)
+		err = os.WriteFile(filepath.Join(destination, "Makefile"), []byte(makefileExample), 0644)
+    	if err != nil {
+        	ReportError("Error writing example Makefile", err, true)
+    	}
+    } else {
+    	Print("Skipping Makefile on Windows")
     }
 
 	Print("Adding README.md")
