@@ -15,7 +15,7 @@ supports nearly all of Lua, it does not support the package ecosystem.
 
 Git submodules are a fine way to manage repositories that you just want to
 clone down and update.  Using `toybox` gives you that ability as well as the
-ability to manage transient dependencies (and their proper, non-conflicting
+ability to manage transitive dependencies (and their proper, non-conflicting
 versions) in those repositories.
 
 ## Usage
@@ -117,7 +117,7 @@ Fetching Nikaoto/deep@master
 Writing import file
 ```
 
-And the import file might look like:
+And the import file might look like (in `toyboxes.lua`):
 
 ```
 import("libraries/jm/geometry/main")
@@ -178,24 +178,94 @@ run in the Simulator.
 
 #### Managing dependencies in your `Boxfile`
 
-...
+You can add and remove dependencies manually if you'd like, but there are
+also convenience commands for doing that:
+
+```
+toybox add owner/dependency
+toybox remove owner/dependency
+```
+
+These commands will add or remove a dependency from your `Boxfile` and 
+resolve/install the list again.
+
+If you want to update a single dependency's version (either because you
+changed it manually or because there is a newer one available), you can
+run:
+
+```
+toybox update owner/dependency
+```
+
+Running this command will find the best version to resolve with the 
+provided version constraints (including the changed version for the
+dependency you're updating).
 
 #### Getting information
 
-...
+To find out the current `toybox` version, simply run `toybox version`.
+
+To see the current list of dependencies, run `toybox info`.
+
+To get more help, run `toybox help` followed by a subcommand.  For
+example, `toybox help install`.
 
 ## Creating a toybox
 
-...
+Creating a library compatible with `toybox` is actually really simple
+since I tried to make `toybox` understand conventions and norms that
+the PlayDate dev community is already using.
 
 ### Setting up the code
 
-...
+Ideally, your code will be contained in a `source` folder with a 
+`import.lua` file that is the entrypoint for your library.
+Realistically, though, your code simply needs to have one of the
+following files to be properly imported by `toybox`:
+
+* `/source/import.lua`
+* `/source/main.lua`
+* `/source/<your toybox name>.lua` (e.g., `jm/Geometry/source/Geometry.lua`)
+* `/import.lua`
+* `/main.lua`
+* `/<your toybox name>.lua` (e.g., `jm/Geometry/source/Geometry.lua`)
+
+That's about it.  Once someone imports your package using `toybox`,
+the code will be available after they import the `toyboxes.lua` file.
+
+If your toybox depends on other toyboxes, you can add a `Boxfile`
+to your library and `toybox` will resolve and import those into 
+your users' downstream code as well.  So, for example, if `jm/Geometry`
+depends on `you/Things` and a user added the `Geometry` library to their
+project's `Boxfile`, the dependency list shown by `toybox info` would 
+list both of xthose dependencies as being in their toybox bundle.
 
 ### Making a release
 
-...
+Folks can always install your toybox from `master` or `main` or whatever
+the default branch is for your repository.  They can install that version,
+and when new commits are added, they can run `toybox update` to get the
+newest code.  Ideally, though, your library would be versioned so users
+can better manage its impact on their projecrts.
+
+To make a versioned release, you need to tag a commit in your Git
+repository and push that tag to GitHub.  You can do this from the command
+line with [these instructions](https://git-scm.com/book/en/v2/Git-Basics-Tagging)
+or you can do it in the GitHub UI with their[fancy Releases feature](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases).
+
+The tag's name needs to follow [Semantic Versioning](https://semver.org).  So for example, good
+tag names would be something like:
+
+* `v8.0`
+* `v0.2.0`
+* `0.1.1beta`
+
+You can name your releases whatever you'd like, but the version resolution
+might get interesting if you don't [follow semantic versioning](https://semver.org). 😬
 
 ## Contributing
 
-...
+[File issues for any bugs or feature requests!](https://github.com/jm/toybox/issues)
+
+If you want to contribute code, please create a feature branch and [submit
+a pull request](https://github.com/jm/toybox/pulls).
