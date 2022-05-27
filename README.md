@@ -238,7 +238,7 @@ to your library and `toybox` will resolve and import those into
 your users' downstream code as well.  So, for example, if `jm/Geometry`
 depends on `you/Things` and a user added the `Geometry` library to their
 project's `Boxfile`, the dependency list shown by `toybox info` would 
-list both of xthose dependencies as being in their toybox bundle.
+list both of those dependencies as being in their toybox bundle.
 
 ### Making a release
 
