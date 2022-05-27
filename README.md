@@ -228,7 +228,7 @@ following files to be properly imported by `toybox`:
 * `/source/<your toybox name>.lua` (e.g., `jm/Geometry/source/Geometry.lua`)
 * `/import.lua`
 * `/main.lua`
-* `/<your toybox name>.lua` (e.g., `jm/Geometry/source/Geometry.lua`)
+* `/<your toybox name>.lua` (e.g., `jm/Geometry/Geometry.lua`)
 
 That's about it.  Once someone imports your package using `toybox`,
 the code will be available after they import the `toyboxes.lua` file.
