@@ -5,7 +5,7 @@ import(
 	"github.com/fatih/color"
 )
 
-var ToyboxVersion = "0.0.2"
+var ToyboxVersion = "0.0.3"
 
 func PrintVersion() {
 	title := color.New(color.FgCyan, color.Bold)
