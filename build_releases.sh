@@ -25,7 +25,9 @@ do
 		mv build/${platforms[$i]}-${archs[$i]}/toybox build/${platforms[$i]}-${archs[$i]}/toybox.exe
 	fi
 
-	zip -r releases/toybox-${tbVersion}-${platforms[$i]}-${archs[$i]}.zip build/${platforms[$i]}-${archs[$i]}/*
+	cd build/${platforms[$i]}-${archs[$i]}/
+	zip -r ../../releases/toybox-${tbVersion}-${platforms[$i]}-${archs[$i]}.zip ./*
+	cd ../..
 done
 
 echo "Building .msi..."
