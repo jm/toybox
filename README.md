@@ -18,6 +18,33 @@ clone down and update.  Using `toybox` gives you that ability as well as the
 ability to manage transitive dependencies (and their proper, non-conflicting
 versions) in those repositories.
 
+## Installation
+
+You can always grab a binary from the releases page, but there are also a few
+other options for installation.
+
+### macOS
+
+If you have homebrew, then you can use it to manage your `toybox` install:
+
+```
+brew tap jm/toybox
+brew install toybox
+```
+
+On first run, macOS will likely flag it as a security risk.  You'll need to go
+into System Preferences / Security & Privacy to allow it.  I'm working on fixing
+that!
+
+### Windows
+
+Grab the .msi package from the releases page.  I'm working on getting a package
+ready for `winget`.
+
+### From source
+
+Clone the code, run `go get`, and then `go build`.
+
 ## Usage
 
 A toybox dependency can either be specifically tailored to use with toybox,
